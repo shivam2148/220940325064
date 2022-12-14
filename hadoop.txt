@@ -1,0 +1,83 @@
+package cdacjava;
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+import cdacjava.Player.ReduceClass;
+
+public class Exam {
+  	public static class MapClass extends Mapper<LongWritable, Text, Text, IntWritable>{
+     private Text stock_id = new Text() ;
+     private DoubleWritable High = new DoubleWritable() ;
+     
+     public void map(LongWritable key,Text value, Context context)
+     {
+    	 try {
+    		 String[] str = value.toString().split(",");
+    		 double high = Double.parseDouble(str[4]);
+    		 stock_id.set(str[1]);
+    		 High.set(high);
+    		 
+    		 context.write(stock_id,  High);
+    	 }
+    	 catch(Exception e)
+    	 {
+    		 System.out.println(e.getMessage());
+    	 }
+    	 
+
+ }
+
+  public static class ReducerClass  extends Reducer<Text,IntWritable,Text,IntWritable> {
+	  private DoubleWritable result = new DoubleWritable() ;
+      public void reduce(Text key, Iterable<DoubleWritable> values, Context context) 
+       throw IOException, InturreptedException{
+    	  double maxValue=0;
+    	  double temp_value=0;
+    	  
+    	  for (DoubleWritable value : values) {
+    		  temp_val = value.get();
+    		  if (temp_val  > maxValue) {
+    			  maxValue = temp_val;
+    		  }
+    	  }
+    	  result.set(maxvalue);
+    	  context.write(key ,result);
+      }
+  
+
+public static void main(String[] args) throws Exception {
+    Configuration conf = new Configuration();
+    Job job = Job.getInstance(conf, "Highest Price for each stock ");
+    job.setJarByClass(Exam.class);
+    job.setMapperClass(MapClass.class);
+    
+    job.setReducerClass(ReduceClass.class);
+    job.setNumReduceTasks(1);
+    job.setMapOutputKeyClass(Text.class);
+    job.setMapOutputValueClass(DoubleWritable.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(LongWritable.class);
+
+    FileInputFormat.addInputPath(job, new Path(args[0]));
+    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+    System.exit(job.waitForCompletion(true) ? 0 : 1);
+
+  }
+  }
+ 
+  
+  
+
+
